@@ -1,222 +1,251 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import Scene from './components/Scene.jsx'
-import Hero from './sections/Hero.jsx'
-import About from './sections/About.jsx'
-import Mixes from './sections/Mixes.jsx'
-import Events from './sections/Events.jsx'
-import Contact from './sections/Contact.jsx'
+import { useProgress } from '@react-three/drei'
+import ExperienceCanvas from './experience/ExperienceCanvas.jsx'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
-const SECTIONS = [
-  { id: 'hero', number: '01', label: 'Hero', color: '#ff3c00' },
-  { id: 'about', number: '02', label: 'About', color: '#00f0ff' },
-  { id: 'mixes', number: '03', label: 'Mixes', color: '#ff00aa' },
-  { id: 'events', number: '04', label: 'Events', color: '#aaff00' },
-  { id: 'contact', number: '05', label: 'Book', color: '#ffffff' },
+const CHAPTERS = [
+  {
+    id: 'hero',
+    number: '01',
+    label: 'Launch',
+    progress: 0,
+    color: '#8b5cff',
+    eyebrow: 'Outer space signal',
+    title: 'DJ NEXUS',
+    copy: 'Scroll to fly forward through a futuristic DJ universe built from light, bass, stage energy, and floating visuals.',
+  },
+  {
+    id: 'tunnel',
+    number: '02',
+    label: 'Tunnel',
+    progress: 0.18,
+    color: '#00d9ff',
+    eyebrow: 'Neon corridor',
+    title: 'Neon pulse tunnel',
+    copy: 'The camera pushes through rings, beat-reactive lights, particles, fog, and speed lines.',
+  },
+  {
+    id: 'stage',
+    number: '03',
+    label: 'Stage',
+    progress: 0.42,
+    color: '#ff2bd6',
+    eyebrow: 'Main stage reveal',
+    title: 'Mainstage reveal',
+    copy: 'Speakers breathe with the beat while lasers sweep across a black-space concert floor.',
+  },
+  {
+    id: 'about',
+    number: '04',
+    label: 'About',
+    progress: 0.62,
+    color: '#4dffb8',
+    eyebrow: 'Hologram profile',
+    title: 'Hologram profile',
+    copy: 'Floating UI panels introduce the artist with a premium festival-tech visual language.',
+  },
+  {
+    id: 'gallery',
+    number: '05',
+    label: 'Gallery',
+    progress: 0.78,
+    color: '#b4ff00',
+    eyebrow: '3D memory wall',
+    title: 'Floating photo wall',
+    copy: 'Artist photos and DJ visuals sit inside the world as parallax panels instead of normal page images.',
+  },
+  {
+    id: 'booking',
+    number: '06',
+    label: 'Booking',
+    progress: 0.96,
+    color: '#ffffff',
+    eyebrow: 'Final approach',
+    title: 'Booking console',
+    copy: 'The journey stops at a glowing contact interface built like a command console.',
+  },
 ]
 
+function getActiveChapter(progress) {
+  let active = 0
+
+  CHAPTERS.forEach((chapter, index) => {
+    if (progress >= chapter.progress - 0.04) {
+      active = index
+    }
+  })
+
+  return active
+}
+
+function LoadingOverlay() {
+  const { progress, active } = useProgress()
+  const [hidden, setHidden] = useState(false)
+
+  useEffect(() => {
+    if (progress >= 100 && !active) {
+      const timeout = window.setTimeout(() => setHidden(true), 650)
+      return () => window.clearTimeout(timeout)
+    }
+
+    setHidden(false)
+    return undefined
+  }, [active, progress])
+
+  return (
+    <div className={`loading-screen ${hidden ? 'is-hidden' : ''}`} aria-hidden={hidden}>
+      <div className="loading-orbit">
+        <span />
+        <span />
+        <span />
+      </div>
+      <p>Initializing DJ flight path</p>
+      <strong>{Math.round(progress)}%</strong>
+    </div>
+  )
+}
+
+function Hud({ activeIndex, onJump }) {
+  const active = CHAPTERS[activeIndex]
+
+  return (
+    <header className="hud">
+      <a className="hud-logo" href="#hero" onClick={(event) => onJump(event, 0)} aria-label="DJ NEXUS launch">
+        DJ NEXUS
+      </a>
+
+      <nav className="hud-nav" aria-label="Cinematic journey navigation">
+        {CHAPTERS.map((chapter, index) => (
+          <a
+            key={chapter.id}
+            className={`hud-link ${index === activeIndex ? 'is-active' : ''}`}
+            href={`#${chapter.id}`}
+            onClick={(event) => onJump(event, index)}
+          >
+            <span>{chapter.number}</span>
+            {chapter.label}
+          </a>
+        ))}
+      </nav>
+
+      <div className="hud-readout" aria-hidden="true">
+        <span>{active.number}</span>
+        <strong>{active.label}</strong>
+      </div>
+    </header>
+  )
+}
+
+function ActiveChapterPanel({ chapter }) {
+  return (
+    <aside key={chapter.id} className="chapter-overlay" aria-live="polite">
+      <p>{chapter.eyebrow}</p>
+      <h1>{chapter.title}</h1>
+      <span>{chapter.copy}</span>
+    </aside>
+  )
+}
+
+function BookingConsole({ active }) {
+  return (
+    <form className={`booking-console ${active ? 'is-active' : ''}`}>
+      <label>
+        Name
+        <input name="name" type="text" autoComplete="name" />
+      </label>
+      <label>
+        Email
+        <input name="email" type="email" autoComplete="email" />
+      </label>
+      <label>
+        Event signal
+        <textarea name="message" rows="4" />
+      </label>
+      <button type="button">Send Booking Signal</button>
+    </form>
+  )
+}
+
 export default function App() {
-  const appRef = useRef(null)
+  const scrollRef = useRef(null)
   const progressRef = useRef(0)
+  const velocityRef = useRef(0)
   const progressBarRef = useRef(null)
-  const dotRef = useRef(null)
-  const ringRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
 
-  useEffect(() => {
-    document.documentElement.style.setProperty('--section-color', SECTIONS[activeIndex].color)
-  }, [activeIndex])
+  const activeChapter = CHAPTERS[activeIndex]
+  const progressStops = useMemo(() => CHAPTERS.map((chapter) => chapter.progress), [])
 
   useEffect(() => {
-    const updateProgress = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
-      const progress = maxScroll > 0 ? window.scrollY / maxScroll : 0
-      progressRef.current = Math.min(1, Math.max(0, progress))
-
-      if (progressBarRef.current) {
-        progressBarRef.current.style.transform = `scaleX(${progressRef.current})`
-      }
-    }
-
-    updateProgress()
-    window.addEventListener('scroll', updateProgress, { passive: true })
-    window.addEventListener('resize', updateProgress)
-
-    return () => {
-      window.removeEventListener('scroll', updateProgress)
-      window.removeEventListener('resize', updateProgress)
-    }
-  }, [])
-
-  useEffect(() => {
-    const dot = dotRef.current
-    const ring = ringRef.current
-
-    if (!dot || !ring || !window.matchMedia('(pointer: fine)').matches) {
-      return undefined
-    }
-
-    const pointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-    const smooth = { x: pointer.x, y: pointer.y }
-    let rafId = 0
-
-    const move = (event) => {
-      pointer.x = event.clientX
-      pointer.y = event.clientY
-      dot.style.opacity = '1'
-      ring.style.opacity = '1'
-      dot.style.transform = `translate3d(${pointer.x}px, ${pointer.y}px, 0) translate(-50%, -50%)`
-    }
-
-    const render = () => {
-      smooth.x += (pointer.x - smooth.x) * 0.18
-      smooth.y += (pointer.y - smooth.y) * 0.18
-      ring.style.transform = `translate3d(${smooth.x}px, ${smooth.y}px, 0) translate(-50%, -50%)`
-      rafId = window.requestAnimationFrame(render)
-    }
-
-    window.addEventListener('mousemove', move, { passive: true })
-    rafId = window.requestAnimationFrame(render)
-
-    return () => {
-      window.removeEventListener('mousemove', move)
-      window.cancelAnimationFrame(rafId)
-    }
-  }, [])
+    document.documentElement.style.setProperty('--chapter-color', activeChapter.color)
+  }, [activeChapter])
 
   useGSAP(
     () => {
-      gsap.defaults({ ease: 'power3.out', duration: 0.8 })
+      const scrollEl = scrollRef.current
+      if (!scrollEl) return undefined
 
-      const sectionEls = gsap.utils.toArray('.content-section')
+      gsap.fromTo(
+        '.hud',
+        { autoAlpha: 0, y: -18 },
+        { autoAlpha: 1, y: 0, duration: 1.1, ease: 'power3.out', delay: 0.35 },
+      )
 
-      sectionEls.forEach((section, index) => {
-        ScrollTrigger.create({
-          trigger: section,
-          start: 'top center',
-          end: 'bottom center',
-          onEnter: () => setActiveIndex(index),
-          onEnterBack: () => setActiveIndex(index),
-        })
+      const trigger = ScrollTrigger.create({
+        trigger: scrollEl,
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 0.9,
+        onUpdate: (self) => {
+          progressRef.current = self.progress
+          velocityRef.current = self.getVelocity()
 
-        gsap.fromTo(
-          section.querySelectorAll('.section-marker, .reveal-line, .reveal-item'),
-          { autoAlpha: 0, y: 46 },
-          {
-            autoAlpha: 1,
-            y: 0,
-            stagger: 0.08,
-            scrollTrigger: {
-              trigger: section,
-              start: 'top 74%',
-              end: 'top 30%',
-              scrub: 1,
-            },
-          },
-        )
-      })
+          if (progressBarRef.current) {
+            progressBarRef.current.style.transform = `scaleX(${self.progress})`
+          }
 
-      const mixesSection = document.querySelector('#mixes')
-      const mixTrack = document.querySelector('.mixes-track')
-
-      if (mixesSection && mixTrack) {
-        const media = gsap.matchMedia()
-
-        media.add('(min-width: 761px)', () => {
-          gsap.to(mixTrack, {
-            x: () => {
-              const edge = Math.min(window.innerWidth * 0.08, 96)
-              return Math.min(0, window.innerWidth - mixTrack.scrollWidth - edge)
-            },
-            ease: 'none',
-            scrollTrigger: {
-              trigger: mixesSection,
-              start: 'top top',
-              end: () => `+=${Math.max(1100, mixTrack.scrollWidth * 0.72)}`,
-              pin: true,
-              scrub: 1,
-              anticipatePin: 1,
-              invalidateOnRefresh: true,
-              onEnter: () => setActiveIndex(2),
-              onEnterBack: () => setActiveIndex(2),
-              onUpdate: (self) => {
-                if (self.isActive) setActiveIndex(2)
-              },
-            },
-          })
-        })
-      }
-
-      const navItems = gsap.utils.toArray('.nav-link')
-      navItems.forEach((link) => {
-        const targetId = link.getAttribute('href')
-        const target = targetId ? document.querySelector(targetId) : null
-        if (!target) return
-
-        ScrollTrigger.create({
-          trigger: target,
-          start: 'top 45%',
-          end: 'bottom 45%',
-          toggleClass: { targets: link, className: 'is-active' },
-        })
+          const nextIndex = getActiveChapter(self.progress)
+          setActiveIndex((current) => (current === nextIndex ? current : nextIndex))
+        },
       })
 
       document.fonts?.ready.then(() => ScrollTrigger.refresh())
+
+      return () => trigger.kill()
     },
-    { scope: appRef },
+    { scope: scrollRef },
   )
 
+  const jumpTo = (event, index) => {
+    event.preventDefault()
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+    window.scrollTo({
+      top: maxScroll * progressStops[index],
+      behavior: 'smooth',
+    })
+  }
+
   return (
-    <div ref={appRef} className="site-shell">
-      <Scene
-        activeIndex={activeIndex}
-        sectionColors={SECTIONS.map((section) => section.color)}
-        scrollProgressRef={progressRef}
-      />
+    <div className="app-shell">
+      <ExperienceCanvas progressRef={progressRef} velocityRef={velocityRef} activeIndex={activeIndex} />
+      <LoadingOverlay />
+      <Hud activeIndex={activeIndex} onJump={jumpTo} />
+      <ActiveChapterPanel chapter={activeChapter} />
+      <BookingConsole active={activeIndex === CHAPTERS.length - 1} />
 
-      <div ref={progressBarRef} className="scroll-progress" aria-hidden="true" />
+      <div ref={progressBarRef} className="journey-progress" aria-hidden="true" />
 
-      <div className="cursor-dot" ref={dotRef} aria-hidden="true" />
-      <div className="cursor-ring" ref={ringRef} aria-hidden="true" />
-
-      <header className="site-nav">
-        <a className="nav-logo" href="#hero" aria-label="DJ NEXUS home">
-          DJ NEXUS
-        </a>
-        <nav className="nav-links" aria-label="Primary navigation">
-          {SECTIONS.map((section) => (
-            <a key={section.id} className="nav-link" href={`#${section.id}`}>
-              {section.label}
-            </a>
-          ))}
-        </nav>
-      </header>
-
-      <div className="section-indicator" key={SECTIONS[activeIndex].id} aria-hidden="true">
-        <span>{SECTIONS[activeIndex].number}</span>
-        <strong>{SECTIONS[activeIndex].label}</strong>
-      </div>
-
-      <div className="eq-widget" aria-hidden="true">
-        {Array.from({ length: 14 }, (_, index) => (
-          <span key={index} style={{ '--bar-delay': `${index * 0.07}s` }} />
+      <main ref={scrollRef} className="scroll-journey">
+        {CHAPTERS.map((chapter) => (
+          <section key={chapter.id} id={chapter.id} className="journey-panel" aria-label={chapter.label} />
         ))}
-      </div>
-
-      <main className="sections">
-        <Hero number="01" />
-        <About number="02" />
-        <Mixes number="03" />
-        <Events number="04" />
-        <Contact number="05" />
       </main>
 
-      <div className="scanline-overlay" aria-hidden="true" />
-      <div className="vignette-overlay" aria-hidden="true" />
+      <div className="scanlines" aria-hidden="true" />
     </div>
   )
 }
