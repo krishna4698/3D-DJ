@@ -108,16 +108,29 @@ function GoldArch({ position, scale = 1 }) {
   )
 }
 
-function ImageCard3D({ texture, position, rotation, size, index }) {
+function ImageCard3D({ texture, position, galleryPosition, rotation, galleryRotation, size, gallerySize, index, activeId }) {
   const [hovered, setHovered] = useState(false)
   const ref = useRef(null)
+  const targetPosition = useMemo(() => new THREE.Vector3(), [])
+  const targetRotation = useMemo(() => new THREE.Euler(), [])
 
   useFrame(({ clock }, delta) => {
     if (!ref.current) return
-    ref.current.rotation.y = rotation[1] + Math.sin(clock.elapsedTime * 0.4 + index) * 0.035
-    ref.current.position.y = position[1] + Math.sin(clock.elapsedTime * 0.5 + index) * 0.08
+    const galleryMode = activeId === 'gallery'
+    const nextPosition = galleryMode ? galleryPosition : position
+    const nextRotation = galleryMode ? galleryRotation : rotation
+
+    targetPosition.set(nextPosition[0], nextPosition[1] + Math.sin(clock.elapsedTime * 0.5 + index) * 0.08, nextPosition[2])
+    targetRotation.set(nextRotation[0], nextRotation[1] + Math.sin(clock.elapsedTime * 0.4 + index) * 0.035, nextRotation[2])
+
+    ref.current.position.lerp(targetPosition, 1 - Math.exp(-delta * 3.6))
+    ref.current.rotation.x = THREE.MathUtils.damp(ref.current.rotation.x, targetRotation.x, 3.6, delta)
+    ref.current.rotation.y = THREE.MathUtils.damp(ref.current.rotation.y, targetRotation.y, 3.6, delta)
+    ref.current.rotation.z = THREE.MathUtils.damp(ref.current.rotation.z, targetRotation.z, 3.6, delta)
     ref.current.scale.setScalar(THREE.MathUtils.damp(ref.current.scale.x, hovered ? 1.06 : 1, 5, delta))
   })
+
+  const displaySize = activeId === 'gallery' ? gallerySize : size
 
   return (
     <Float speed={0.85 + index * 0.05} rotationIntensity={0.08} floatIntensity={0.18}>
@@ -136,12 +149,16 @@ function ImageCard3D({ texture, position, rotation, size, index }) {
         }}
       >
         <mesh position={[0, 0, -0.04]}>
-          <boxGeometry args={[size[0] + 0.14, size[1] + 0.14, 0.08]} />
+          <boxGeometry args={[displaySize[0] + 0.18, displaySize[1] + 0.18, 0.12]} />
           <meshStandardMaterial color="#071b12" metalness={0.42} roughness={0.22} emissive="#2e1d08" emissiveIntensity={0.22} />
         </mesh>
-        <mesh>
-          <planeGeometry args={size} />
+        <mesh position={[0, 0, 0.08]}>
+          <planeGeometry args={displaySize} />
           <meshBasicMaterial map={texture} toneMapped={false} />
+        </mesh>
+        <mesh position={[0, -displaySize[1] * 0.5 - 0.08, -0.02]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[displaySize[0] * 0.95, 0.12]} />
+          <meshBasicMaterial color="#d9ad57" transparent opacity={0.28} />
         </mesh>
       </group>
     </Float>
@@ -169,18 +186,60 @@ function WeddingBackdrop({ activeId }) {
   })
 
   const cards = [
-    { position: [3.25, 0.2, -1.8], rotation: [0, -0.32, 0.03], size: [2.25, 3.05] },
-    { position: [1.3, -1.35, -2.9], rotation: [0, -0.08, -0.02], size: [2.05, 2.6] },
-    { position: [3.55, -1.55, -3.4], rotation: [0, -0.42, 0.04], size: [2.15, 2.5] },
-    { position: [1.35, 1.35, -3.75], rotation: [0, -0.02, -0.02], size: [2.05, 2.05] },
-    { position: [3.5, 1.45, -4.35], rotation: [0, -0.38, 0.03], size: [2.0, 2.55] },
-    { position: [2.2, -2.2, -4.75], rotation: [0, -0.18, 0], size: [2.15, 2.35] },
+    {
+      position: [2.55, 0.28, -1.55],
+      galleryPosition: [-2.65, -0.62, -1.7],
+      rotation: [0, -0.25, 0.025],
+      galleryRotation: [0, 0.28, -0.025],
+      size: [2.75, 3.75],
+      gallerySize: [2.55, 3.48],
+    },
+    {
+      position: [4.15, -1.18, -2.8],
+      galleryPosition: [0, -0.72, -1.35],
+      rotation: [0, -0.42, -0.02],
+      galleryRotation: [0, 0, 0],
+      size: [2.28, 2.9],
+      gallerySize: [2.72, 3.2],
+    },
+    {
+      position: [3.45, 1.62, -3.2],
+      galleryPosition: [2.72, -0.62, -1.75],
+      rotation: [0, -0.38, 0.035],
+      galleryRotation: [0, -0.28, 0.025],
+      size: [2.35, 2.75],
+      gallerySize: [2.55, 3.0],
+    },
+    {
+      position: [1.55, -1.75, -3.65],
+      galleryPosition: [-1.55, -2.45, -2.15],
+      rotation: [0, -0.08, -0.02],
+      galleryRotation: [0, 0.18, -0.025],
+      size: [2.15, 2.15],
+      gallerySize: [2.35, 2.35],
+    },
+    {
+      position: [4.35, 1.22, -4.15],
+      galleryPosition: [1.45, -2.42, -2.1],
+      rotation: [0, -0.46, 0.03],
+      galleryRotation: [0, -0.16, 0.02],
+      size: [2.1, 2.68],
+      gallerySize: [2.38, 2.9],
+    },
+    {
+      position: [2.8, -2.45, -4.7],
+      galleryPosition: [3.55, -2.3, -2.55],
+      rotation: [0, -0.24, 0],
+      galleryRotation: [0, -0.35, 0.02],
+      size: [2.2, 2.42],
+      gallerySize: [2.25, 2.48],
+    },
   ]
 
   return (
     <group ref={groupRef}>
       {cards.map((card, index) => (
-        <ImageCard3D key={IMAGE_URLS[index]} texture={textures[index]} index={index} {...card} />
+        <ImageCard3D key={IMAGE_URLS[index]} texture={textures[index]} index={index} activeId={activeId} {...card} />
       ))}
       <GoldArch position={[-2.9, -1.15, -2.8]} scale={0.95} />
       <GoldArch position={[2.85, 1.2, -3.8]} scale={0.72} />
