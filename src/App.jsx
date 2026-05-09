@@ -2,250 +2,277 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useProgress } from '@react-three/drei'
 import ExperienceCanvas from './experience/ExperienceCanvas.jsx'
 
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
-const CHAPTERS = [
+const NAV_ITEMS = [
+  { id: 'home', label: 'Home' },
+  { id: 'gallery', label: 'Gallery' },
+  { id: 'services', label: 'Services' },
+  { id: 'contact', label: 'Contact' },
+]
+
+const GALLERY = [
   {
-    id: 'hero',
-    number: '01',
-    label: 'Launch',
-    progress: 0,
-    color: '#8b5cff',
-    eyebrow: 'Outer space signal',
-    title: 'DJ NEXUS',
-    copy: 'Scroll to fly forward through a futuristic DJ universe built from light, bass, stage energy, and floating visuals.',
+    src: '/wedding/venue-mandap.jpg',
+    title: 'Candle-lit Royal Mandap',
+    type: 'Garden wedding',
   },
   {
-    id: 'tunnel',
-    number: '02',
-    label: 'Tunnel',
-    progress: 0.18,
-    color: '#00d9ff',
-    eyebrow: 'Neon corridor',
-    title: 'Neon pulse tunnel',
-    copy: 'The camera pushes through rings, beat-reactive lights, particles, fog, and speed lines.',
+    src: '/wedding/beach-floral-aisle.jpg',
+    title: 'Seaside Floral Aisle',
+    type: 'Destination ceremony',
   },
   {
-    id: 'stage',
-    number: '03',
-    label: 'Stage',
-    progress: 0.42,
-    color: '#ff2bd6',
-    eyebrow: 'Main stage reveal',
-    title: 'Mainstage reveal',
-    copy: 'Speakers breathe with the beat while lasers sweep across a black-space concert floor.',
+    src: '/wedding/night-gold-mandap.jpg',
+    title: 'Gold Reflective Stage',
+    type: 'Night reception',
   },
   {
-    id: 'about',
-    number: '04',
-    label: 'About',
-    progress: 0.62,
-    color: '#4dffb8',
-    eyebrow: 'Hologram profile',
-    title: 'Hologram profile',
-    copy: 'Floating UI panels introduce the artist with a premium festival-tech visual language.',
+    src: '/wedding/golden-bead-mandap.jpg',
+    title: 'Golden Bead Mandap',
+    type: 'Sunset celebration',
   },
   {
-    id: 'gallery',
-    number: '05',
-    label: 'Gallery',
-    progress: 0.78,
-    color: '#b4ff00',
-    eyebrow: '3D memory wall',
-    title: 'Floating photo wall',
-    copy: 'Artist photos and DJ visuals sit inside the world as parallax panels instead of normal page images.',
+    src: '/wedding/garden-heart-stage.jpg',
+    title: 'Garden Floral Stage',
+    type: 'Engagement setup',
   },
   {
-    id: 'booking',
-    number: '06',
-    label: 'Booking',
-    progress: 0.96,
-    color: '#ffffff',
-    eyebrow: 'Final approach',
-    title: 'Booking console',
-    copy: 'The journey stops at a glowing contact interface built like a command console.',
+    src: '/wedding/seaside-pastel-mandap.jpg',
+    title: 'Pastel Beach Mandap',
+    type: 'Luxury beach wedding',
   },
 ]
 
-function getActiveChapter(progress) {
-  let active = 0
+const SERVICES = [
+  ['Wedding Decoration', 'Venue styling, entrance design, aisle decor, guest zones, and complete ceremony ambience.'],
+  ['Mandap Decoration', 'Royal mandaps with florals, drapes, chandeliers, gold details, and sacred-stage styling.'],
+  ['Reception Setup', 'Premium reception stages, couple seating, lighting, tablescapes, and photo moments.'],
+  ['Floral Decoration', 'Fresh floral walls, garlands, hanging installations, arches, and petal pathways.'],
+  ['Destination Weddings', 'Beach, resort, palace, farmhouse, and outdoor wedding styling with travel-ready planning.'],
+  ['Event Management', 'Concept, vendor coordination, decor execution, timelines, guest flow, and final production.'],
+]
 
-  CHAPTERS.forEach((chapter, index) => {
-    if (progress >= chapter.progress - 0.04) {
-      active = index
-    }
-  })
-
-  return active
-}
-
-function LoadingOverlay() {
-  const { progress, active } = useProgress()
-  const [hidden, setHidden] = useState(false)
-
-  useEffect(() => {
-    if (progress >= 100 && !active) {
-      const timeout = window.setTimeout(() => setHidden(true), 650)
-      return () => window.clearTimeout(timeout)
-    }
-
-    setHidden(false)
-    return undefined
-  }, [active, progress])
+function Header({ activeId }) {
+  const jumpTo = (event, id) => {
+    event.preventDefault()
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
-    <div className={`loading-screen ${hidden ? 'is-hidden' : ''}`} aria-hidden={hidden}>
-      <div className="loading-orbit">
-        <span />
-        <span />
-        <span />
-      </div>
-      <p>Initializing DJ flight path</p>
-      <strong>{Math.round(progress)}%</strong>
-    </div>
-  )
-}
-
-function Hud({ activeIndex, onJump }) {
-  const active = CHAPTERS[activeIndex]
-
-  return (
-    <header className="hud">
-      <a className="hud-logo" href="#hero" onClick={(event) => onJump(event, 0)} aria-label="DJ NEXUS launch">
-        DJ NEXUS
+    <header className="site-header">
+      <a className="brand-mark" href="#home" onClick={(event) => jumpTo(event, 'home')} aria-label="Royal Vows home">
+        Royal Vows
       </a>
-
-      <nav className="hud-nav" aria-label="Cinematic journey navigation">
-        {CHAPTERS.map((chapter, index) => (
+      <nav className="nav-pill" aria-label="Main navigation">
+        {NAV_ITEMS.map((item) => (
           <a
-            key={chapter.id}
-            className={`hud-link ${index === activeIndex ? 'is-active' : ''}`}
-            href={`#${chapter.id}`}
-            onClick={(event) => onJump(event, index)}
+            key={item.id}
+            href={`#${item.id}`}
+            className={activeId === item.id ? 'is-active' : ''}
+            onClick={(event) => jumpTo(event, item.id)}
           >
-            <span>{chapter.number}</span>
-            {chapter.label}
+            {item.label}
           </a>
         ))}
       </nav>
-
-      <div className="hud-readout" aria-hidden="true">
-        <span>{active.number}</span>
-        <strong>{active.label}</strong>
-      </div>
     </header>
   )
 }
 
-function ActiveChapterPanel({ chapter }) {
+function SectionLabel({ eyebrow, title, copy }) {
   return (
-    <aside key={chapter.id} className="chapter-overlay" aria-live="polite">
-      <p>{chapter.eyebrow}</p>
-      <h1>{chapter.title}</h1>
-      <span>{chapter.copy}</span>
-    </aside>
+    <div className="section-label reveal">
+      <span>{eyebrow}</span>
+      <h2>{title}</h2>
+      <p>{copy}</p>
+    </div>
   )
 }
 
-function BookingConsole({ active }) {
+function GalleryCard({ item, index }) {
   return (
-    <form className={`booking-console ${active ? 'is-active' : ''}`}>
+    <article className={`gallery-card reveal gallery-card-${index + 1}`}>
+      <img src={item.src} alt={item.title} loading={index < 2 ? 'eager' : 'lazy'} />
+      <div>
+        <span>{item.type}</span>
+        <h3>{item.title}</h3>
+      </div>
+    </article>
+  )
+}
+
+function ServiceCard({ title, copy, index }) {
+  return (
+    <article className="service-card reveal">
+      <span>{String(index + 1).padStart(2, '0')}</span>
+      <h3>{title}</h3>
+      <p>{copy}</p>
+    </article>
+  )
+}
+
+function ContactForm() {
+  return (
+    <form className="contact-card reveal">
       <label>
         Name
-        <input name="name" type="text" autoComplete="name" />
+        <input name="name" type="text" autoComplete="name" placeholder="Your name" />
       </label>
       <label>
-        Email
-        <input name="email" type="email" autoComplete="email" />
+        Phone or email
+        <input name="contact" type="text" autoComplete="email" placeholder="How should we contact you?" />
       </label>
       <label>
-        Event signal
-        <textarea name="message" rows="4" />
+        Event details
+        <textarea name="message" rows="5" placeholder="Tell us about your date, venue, and decor vision." />
       </label>
-      <button type="button">Send Booking Signal</button>
+      <button type="button">Send Enquiry</button>
     </form>
   )
 }
 
 export default function App() {
-  const scrollRef = useRef(null)
   const progressRef = useRef(0)
-  const velocityRef = useRef(0)
   const progressBarRef = useRef(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-
-  const activeChapter = CHAPTERS[activeIndex]
-  const progressStops = useMemo(() => CHAPTERS.map((chapter) => chapter.progress), [])
+  const [activeId, setActiveId] = useState('home')
+  const sectionIds = useMemo(() => NAV_ITEMS.map((item) => item.id), [])
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--chapter-color', activeChapter.color)
-  }, [activeChapter])
+    document.documentElement.style.setProperty('--active-section', activeId)
+  }, [activeId])
 
-  useGSAP(
-    () => {
-      const scrollEl = scrollRef.current
-      if (!scrollEl) return undefined
-
-      gsap.fromTo(
-        '.hud',
-        { autoAlpha: 0, y: -18 },
-        { autoAlpha: 1, y: 0, duration: 1.1, ease: 'power3.out', delay: 0.35 },
-      )
-
-      const trigger = ScrollTrigger.create({
-        trigger: scrollEl,
-        start: 'top top',
-        end: 'bottom bottom',
-        scrub: 0.9,
-        onUpdate: (self) => {
-          progressRef.current = self.progress
-          velocityRef.current = self.getVelocity()
-
-          if (progressBarRef.current) {
-            progressBarRef.current.style.transform = `scaleX(${self.progress})`
-          }
-
-          const nextIndex = getActiveChapter(self.progress)
-          setActiveIndex((current) => (current === nextIndex ? current : nextIndex))
-        },
-      })
-
-      document.fonts?.ready.then(() => ScrollTrigger.refresh())
-
-      return () => trigger.kill()
-    },
-    { scope: scrollRef },
-  )
-
-  const jumpTo = (event, index) => {
-    event.preventDefault()
-    const maxScroll = document.documentElement.scrollHeight - window.innerHeight
-    window.scrollTo({
-      top: maxScroll * progressStops[index],
-      behavior: 'smooth',
+  useGSAP(() => {
+    const mainTrigger = ScrollTrigger.create({
+      trigger: document.body,
+      start: 'top top',
+      end: 'bottom bottom',
+      scrub: 0.8,
+      onUpdate: (self) => {
+        progressRef.current = self.progress
+        if (progressBarRef.current) {
+          progressBarRef.current.style.transform = `scaleX(${self.progress})`
+        }
+      },
     })
-  }
+
+    const sectionTriggers = sectionIds.map((id) =>
+      ScrollTrigger.create({
+        trigger: `#${id}`,
+        start: 'top 65%',
+        end: 'bottom 35%',
+        onToggle: (self) => {
+          if (self.isActive) setActiveId(id)
+        },
+      }),
+    )
+
+    const revealAnimation = gsap.fromTo(
+      '.reveal',
+      { y: 42, autoAlpha: 0 },
+      {
+        y: 0,
+        autoAlpha: 1,
+        duration: 0.9,
+        ease: 'power3.out',
+        stagger: 0.08,
+        scrollTrigger: {
+          trigger: '.page-content',
+          start: 'top 70%',
+        },
+      },
+    )
+
+    const batched = ScrollTrigger.batch('.reveal', {
+      start: 'top 82%',
+      onEnter: (batch) => gsap.to(batch, { y: 0, autoAlpha: 1, duration: 0.8, stagger: 0.06, ease: 'power3.out' }),
+      onLeaveBack: (batch) => gsap.to(batch, { y: 28, autoAlpha: 0.35, duration: 0.35, ease: 'power2.out' }),
+    })
+
+    window.setTimeout(() => ScrollTrigger.refresh(), 300)
+
+    return () => {
+      mainTrigger.kill()
+      sectionTriggers.forEach((trigger) => trigger.kill())
+      revealAnimation.kill()
+      batched.forEach((trigger) => trigger.kill())
+    }
+  }, [sectionIds])
 
   return (
     <div className="app-shell">
-      <ExperienceCanvas progressRef={progressRef} velocityRef={velocityRef} activeIndex={activeIndex} />
-      <LoadingOverlay />
-      <Hud activeIndex={activeIndex} onJump={jumpTo} />
-      <ActiveChapterPanel chapter={activeChapter} />
-      <BookingConsole active={activeIndex === CHAPTERS.length - 1} />
-
+      <ExperienceCanvas progressRef={progressRef} activeId={activeId} />
+      <Header activeId={activeId} />
       <div ref={progressBarRef} className="journey-progress" aria-hidden="true" />
 
-      <main ref={scrollRef} className="scroll-journey">
-        {CHAPTERS.map((chapter) => (
-          <section key={chapter.id} id={chapter.id} className="journey-panel" aria-label={chapter.label} />
-        ))}
-      </main>
+      <main className="page-content">
+        <section id="home" className="site-section hero-section">
+          <div className="hero-copy reveal">
+            <p className="eyebrow">Luxury Indian wedding decor and event management</p>
+            <h1>Elegant wedding spaces designed with warmth, florals, and royal detail.</h1>
+            <p>
+              We create cinematic mandaps, reception stages, floral aisles, and complete event experiences with a
+              premium dark green and gold design language.
+            </p>
+            <div className="hero-actions">
+              <a href="#gallery">View Work</a>
+              <a href="#contact">Plan an Event</a>
+            </div>
+          </div>
 
-      <div className="scanlines" aria-hidden="true" />
+          <aside className="hero-showcase reveal" aria-label="Featured wedding decoration">
+            <img src="/wedding/venue-mandap.jpg" alt="Royal candle-lit floral mandap" />
+            <div>
+              <span>Featured setup</span>
+              <strong>Royal floral mandap with candle-lit aisle</strong>
+            </div>
+          </aside>
+        </section>
+
+        <section id="gallery" className="site-section gallery-section">
+          <SectionLabel
+            eyebrow="Portfolio"
+            title="Wedding Decoration Gallery"
+            copy="A clean cinematic showcase of mandaps, floral stages, seaside setups, and luxury celebration spaces."
+          />
+          <div className="gallery-grid">
+            {GALLERY.map((item, index) => (
+              <GalleryCard key={item.src} item={item} index={index} />
+            ))}
+          </div>
+        </section>
+
+        <section id="services" className="site-section services-section">
+          <SectionLabel
+            eyebrow="What we design"
+            title="Premium Wedding and Event Services"
+            copy="Every detail is planned to feel elegant in person and beautiful on camera."
+          />
+          <div className="services-grid">
+            {SERVICES.map(([title, copy], index) => (
+              <ServiceCard key={title} title={title} copy={copy} index={index} />
+            ))}
+          </div>
+        </section>
+
+        <section id="contact" className="site-section contact-section">
+          <div className="contact-copy reveal">
+            <span>Start your celebration</span>
+            <h2>Tell us the mood, venue, and date. We will shape the wedding around it.</h2>
+            <p>
+              Share your event details and we will help you plan a refined decor concept with mandap, florals, lights,
+              stage, guest zones, and production flow.
+            </p>
+            <div className="social-actions">
+              <a href="https://wa.me/" target="_blank" rel="noreferrer">WhatsApp</a>
+              <a href="https://instagram.com/" target="_blank" rel="noreferrer">Instagram</a>
+            </div>
+          </div>
+          <ContactForm />
+        </section>
+      </main>
     </div>
   )
 }
