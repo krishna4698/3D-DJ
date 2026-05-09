@@ -705,7 +705,12 @@ main {
   gap: 18px;
   padding-block: 12px;
   animation: marqueeSlide 54s linear infinite;
+  animation-play-state: paused;
   will-change: transform;
+}
+
+.marquee-section.is-active .marquee-track {
+  animation-play-state: running;
 }
 
 .marquee-viewport:hover .marquee-track {
@@ -1036,6 +1041,11 @@ main {
 }
 
 @media (max-width: 900px) {
+  body::after {
+    opacity: 0.16;
+    background-size: 96px 96px;
+  }
+
   .site-header {
     top: 12px;
     width: min(620px, calc(100vw - 18px));
@@ -1044,6 +1054,8 @@ main {
     gap: 8px;
     border-radius: 24px;
     padding: 10px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.38);
+    backdrop-filter: none;
   }
 
   .nav-pill {
@@ -1068,10 +1080,32 @@ main {
     padding-top: 140px;
   }
 
+  .showcase-section,
+  .services-section,
+  .contact-section {
+    padding-top: 170px;
+  }
+
   .hero-photo-veil {
     inset: auto -12vw 10vh auto;
     width: 74vw;
     opacity: 0.22;
+  }
+
+  .light-orb {
+    filter: blur(22px);
+    opacity: 0.38;
+    animation-duration: 24s;
+  }
+
+  .particle-field span:nth-child(n + 15) {
+    display: none;
+  }
+
+  .particle-field span {
+    box-shadow: none;
+    opacity: 0.26;
+    animation-duration: 14s;
   }
 
   .hero-content h1 {
@@ -1113,7 +1147,19 @@ main {
     grid-row: auto;
     min-height: 430px;
     aspect-ratio: 4 / 3;
+    box-shadow: 0 26px 68px rgba(0, 0, 0, 0.42);
     transform: none;
+  }
+
+  .photo-scene::before,
+  .frame-halo {
+    display: none;
+  }
+
+  .hero-photo-veil img,
+  .photo-image,
+  .marquee-item img {
+    filter: none;
   }
 
   .floating-photo {
@@ -1123,6 +1169,7 @@ main {
     bottom: auto;
     width: min(62vw, 320px);
     margin: -90px 6vw 0 auto;
+    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.38);
   }
 
   .photo-right .floating-photo {
@@ -1137,6 +1184,16 @@ main {
   .contact-section {
     grid-template-columns: 1fr;
     align-content: center;
+  }
+
+  .service-card,
+  .contact-form {
+    box-shadow: 0 22px 58px rgba(0, 0, 0, 0.38);
+    backdrop-filter: none;
+  }
+
+  .marquee-track {
+    animation-duration: 78s;
   }
 }
 

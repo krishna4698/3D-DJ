@@ -235,10 +235,30 @@ function PhotoShowcase() {
 }
 
 function Marquee() {
+  const marqueeRef = useRef(null)
+  const [isActive, setIsActive] = useState(false)
   const marqueePhotos = [...WEDDING_PHOTOS, ...WEDDING_PHOTOS]
 
+  useEffect(() => {
+    if (!marqueeRef.current) return undefined
+    if (!('IntersectionObserver' in window)) {
+      setIsActive(true)
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsActive(entry.isIntersecting)
+      },
+      { rootMargin: '180px 0px' },
+    )
+
+    observer.observe(marqueeRef.current)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <section className="marquee-section" aria-label="Wedding decor image reel">
+    <section ref={marqueeRef} className={`marquee-section ${isActive ? 'is-active' : ''}`} aria-label="Wedding decor image reel">
       <div className="marquee-heading reveal-copy">
         <span>Luxury decor reel</span>
         <p>Florals, lights, mandaps, and soft wedding details in continuous motion.</p>
@@ -349,12 +369,20 @@ export default function App() {
   const [activeId, setActiveId] = useState('home')
 
   useEffect(() => {
+    const mobileScroll = window.matchMedia('(max-width: 820px), (pointer: coarse)').matches
+
+    if (mobileScroll) {
+      ScrollTrigger.normalizeScroll(false)
+      window.setTimeout(() => ScrollTrigger.refresh(), 250)
+      return undefined
+    }
+
     const lenis = new Lenis({
-      duration: 1.35,
-      lerp: 0.085,
+      duration: 1.15,
+      lerp: 0.11,
       smoothWheel: true,
-      wheelMultiplier: 0.86,
-      touchMultiplier: 1.15,
+      syncTouch: false,
+      wheelMultiplier: 0.95,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     })
 
@@ -389,6 +417,8 @@ export default function App() {
 
   useGSAP(
     () => {
+      const mobileAnimations = window.matchMedia('(max-width: 820px), (pointer: coarse)').matches
+
       ScrollTrigger.create({
         trigger: document.body,
         start: 'top top',
@@ -412,47 +442,76 @@ export default function App() {
         })
       })
 
-      gsap.to('.hero-content', {
-        y: 72,
-        scale: 0.9,
-        autoAlpha: 0.18,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '.hero-section',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 1.2,
-        },
-      })
-
-      gsap.to('.parallax-bg', {
-        yPercent: 18,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '.hero-section',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: 1.6,
-        },
-      })
-
-      gsap.utils.toArray('.reveal-copy').forEach((element) => {
-        gsap.fromTo(
-          element,
-          { y: 46, autoAlpha: 0 },
-          {
-            y: 0,
-            autoAlpha: 1,
-            duration: 1.05,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: element,
-              start: 'top 82%',
-              toggleActions: 'play none none reverse',
+      const revealCopy = (once = false) => {
+        gsap.utils.toArray('.reveal-copy').forEach((element) => {
+          gsap.fromTo(
+            element,
+            { y: mobileAnimations ? 26 : 46, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: mobileAnimations ? 0.72 : 1.05,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: element,
+                start: mobileAnimations ? 'top 88%' : 'top 82%',
+                toggleActions: 'play none none reverse',
+                once,
+              },
             },
-          },
-        )
+          )
+        })
+      }
+
+      const revealCards = (once = false) => {
+        gsap.utils.toArray('.reveal-card').forEach((card, index) => {
+          gsap.fromTo(
+            card,
+            { y: mobileAnimations ? 24 : 44, autoAlpha: 0 },
+            {
+              y: 0,
+              autoAlpha: 1,
+              duration: mobileAnimations ? 0.68 : 0.9,
+              delay: mobileAnimations ? 0 : (index % 3) * 0.05,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: card,
+                start: mobileAnimations ? 'top 90%' : 'top 84%',
+                toggleActions: 'play none none reverse',
+                once,
+              },
+            },
+          )
+        })
+      }
+
+      gsap.to('.hero-content', {
+        y: mobileAnimations ? 28 : 72,
+        scale: mobileAnimations ? 0.97 : 0.9,
+        autoAlpha: mobileAnimations ? 0.42 : 0.18,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '.hero-section',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: mobileAnimations ? 0.45 : 1.2,
+        },
       })
+
+      if (!mobileAnimations) {
+        gsap.to('.parallax-bg', {
+          yPercent: 18,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '.hero-section',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1.6,
+          },
+        })
+      }
+
+      revealCopy(mobileAnimations)
 
       gsap.utils.toArray('.photo-scene').forEach((scene, index) => {
         const image = scene.querySelector('.photo-image')
@@ -461,53 +520,59 @@ export default function App() {
 
         gsap.fromTo(
           scene,
-          { y: 92, autoAlpha: 0.22 },
+          { y: mobileAnimations ? 34 : 92, autoAlpha: mobileAnimations ? 0 : 0.22 },
           {
             y: 0,
             autoAlpha: 1,
-            duration: 1.25,
+            duration: mobileAnimations ? 0.82 : 1.25,
             ease: 'power3.out',
             scrollTrigger: {
               trigger: scene,
-              start: 'top 80%',
+              start: mobileAnimations ? 'top 88%' : 'top 80%',
               toggleActions: 'play none none reverse',
+              once: mobileAnimations,
             },
           },
         )
 
         gsap.fromTo(
           mask,
-          { clipPath: 'inset(18% 0% 18% 0%)', scale: 0.96 },
+          { clipPath: mobileAnimations ? 'inset(8% 0% 8% 0%)' : 'inset(18% 0% 18% 0%)', scale: 0.96 },
           {
             clipPath: 'inset(0% 0% 0% 0%)',
             scale: 1,
-            duration: 1.35,
+            duration: mobileAnimations ? 0.82 : 1.35,
             ease: 'power3.out',
             scrollTrigger: {
               trigger: scene,
-              start: 'top 76%',
+              start: mobileAnimations ? 'top 86%' : 'top 76%',
               toggleActions: 'play none none reverse',
+              once: mobileAnimations,
             },
           },
         )
 
-        gsap.fromTo(
-          image,
-          { scale: 1.16, yPercent: -7 },
-          {
-            scale: 1.03,
-            yPercent: 7,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: scene,
-              start: 'top bottom',
-              end: 'bottom top',
-              scrub: 1.4,
+        if (mobileAnimations) {
+          gsap.set(image, { scale: 1.02, yPercent: 0 })
+        } else {
+          gsap.fromTo(
+            image,
+            { scale: 1.16, yPercent: -7 },
+            {
+              scale: 1.03,
+              yPercent: 7,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: scene,
+                start: 'top bottom',
+                end: 'bottom top',
+                scrub: 1.4,
+              },
             },
-          },
-        )
+          )
+        }
 
-        if (floatLayer) {
+        if (floatLayer && !mobileAnimations) {
           gsap.to(floatLayer, {
             yPercent: index % 2 === 0 ? -18 : 16,
             rotate: index % 2 === 0 ? -4 : 4,
@@ -522,37 +587,22 @@ export default function App() {
         }
       })
 
-      gsap.utils.toArray('.reveal-card').forEach((card, index) => {
-        gsap.fromTo(
-          card,
-          { y: 44, autoAlpha: 0 },
-          {
-            y: 0,
-            autoAlpha: 1,
-            duration: 0.9,
-            delay: (index % 3) * 0.05,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: card,
-              start: 'top 84%',
-              toggleActions: 'play none none reverse',
-            },
-          },
-        )
-      })
+      revealCards(mobileAnimations)
 
-      gsap.utils.toArray('.parallax-soft').forEach((element) => {
-        gsap.to(element, {
-          yPercent: -12,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: element,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: 1.5,
-          },
+      if (!mobileAnimations) {
+        gsap.utils.toArray('.parallax-soft').forEach((element) => {
+          gsap.to(element, {
+            yPercent: -12,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: element,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: 1.5,
+            },
+          })
         })
-      })
+      }
 
       const refresh = () => ScrollTrigger.refresh()
       window.addEventListener('load', refresh)
